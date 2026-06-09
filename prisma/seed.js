@@ -1,6 +1,8 @@
 import path from "path";
 import { fileURLToPath } from "url";
 import { prisma } from "../src/lib/prisma.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -65,9 +67,11 @@ async function seed() {
       employeeCode: `EMP${i}`,
       fullName: `${firstName} ${lastName}`,
       email: `employee${i}@acme.com`,
+      password: null, // optional but explicit
       country: randomItem(countries),
       department: randomItem(departments),
       jobTitle: randomItem(jobTitles),
+      age: Math.floor(Math.random() * (60 - 21 + 1)) + 21,
       salary: Math.floor(
         Math.random() * (5000000 - 300000) + 300000
       ),
