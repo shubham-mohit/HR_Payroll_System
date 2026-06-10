@@ -2,19 +2,21 @@ import express from "express"
 
 import { createEmployeeController, getEmployeesController, getEmployeeByIDController, updateEmployeeController, deleteEmployeeController, loginUserController } from "../controllers/employee.controller.js";
 import { validate, validateUpdateUser, validateLoginUser } from "../validators/employeeValidator.js";
+import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-router.post("/", createEmployeeController);
+router.post("/", authenticate, createEmployeeController);
 
-router.get("/", getEmployeesController);
+router.post("/login", validateLoginUser, loginUserController);
 
-router.get('/:empId', getEmployeeByIDController)
+router.get("/", authenticate, getEmployeesController);
 
-router.patch('/:id', validateUpdateUser, validate, updateEmployeeController)
+router.get('/:id', authenticate, getEmployeeByIDController)
 
-router.delete('/:id', deleteEmployeeController)
+router.patch('/:id', authenticate, validateUpdateUser, validate, updateEmployeeController)
 
-router.post("/login", validateLoginUser,loginUserController);
+router.delete('/:id', authenticate, deleteEmployeeController)
+
 
 export default router;

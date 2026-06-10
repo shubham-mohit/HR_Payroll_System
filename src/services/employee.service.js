@@ -1,9 +1,10 @@
 import { BadrequestError, NotFoundError } from "../utils/error.js";
 import { prisma } from "../lib/prisma.js";
-import bcrypt  from "bcrypt";
+import { invalidate } from "../utils/cache.js";
+import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
-export const createEmployee = async (data) => {
+export const createEmployeeService = async (data) => {
   const existingEmployee =
     await prisma.employee.findFirst({
       where: {
@@ -25,7 +26,7 @@ export const createEmployee = async (data) => {
   });
 };
 
-export const getEmployees = async ({
+export const getEmployeesService = async ({
   page = 1,
   limit = 10,
   search = "",
@@ -69,10 +70,10 @@ export const getEmployees = async ({
   };
 };
 
-export const fetchEmployee = async (empID) => {
+export const fetchEmployeeService = async (id) => {
   const employee = await prisma.employee.findUnique({
     where: {
-      employeeCode: empID
+      employeeCode: id
     }
   })
   if (!employee) {
@@ -81,22 +82,71 @@ export const fetchEmployee = async (empID) => {
   return employee
 }
 
-export const updateEmployeeDetails = async (updatedFields, id) => {
-  console.log(updatedFields, "up")
-  const result = await prisma.employee.updateMany({
+export const updateEmployeeDetailsService = async (updatedFields, id) => {
+  const oldEmployee = await prisma.employee.findFirst({
     where: {
-      id: id,
-      isDeleted: false
+      id,
+      isDeleted: false,
     },
-    data: updatedFields
   });
 
-  if (result.count === 0) {
+  if (!oldEmployee) {
     throw new NotFoundError(
       "Employee not found or already deleted"
     );
   }
-  return true;
+
+  const updatedEmployee = await prisma.employee.update({
+    where: { id },
+    data: updatedFields,
+  });
+
+  const affectsInsights =
+    updatedFields.country !== undefined ||
+    updatedFields.salary !== undefined ||
+    updatedFields.jobTitle !== undefined;
+
+  if (affectsInsights) {
+    const oldCountry = oldEmployee.country;
+    const newCountry = updatedFields.country || oldCountry;
+
+    if (oldCountry.toLowerCase() !== newCountry.toLowerCase()) {
+      await Promise.all([
+        invalidate(oldCountry),
+        invalidate(newCountry),
+      ]);
+    } else {
+      await invalidate(oldCountry);
+    }
+  }
+
+  return updatedEmployee;
+};
+
+export const deleteEmployeeService = async (id) => {
+  const employee = await prisma.employee.findFirst({
+    where: {
+      id,
+      isDeleted: false,
+    },
+  });
+
+  if (!employee) {
+    throw new NotFoundError(
+      "Employee not found or already deleted."
+    );
+  }
+
+  await prisma.employee.update({
+    where: {
+      id,
+    },
+    data: {
+      isDeleted: true,
+    },
+  });
+
+  await invalidate(employee.country);
 }
 
 export const validateAndIssueToken = async (email, password) => {
@@ -106,7 +156,6 @@ export const validateAndIssueToken = async (email, password) => {
   if (!employee) {
     throw new BadrequestError("Invalid credentials");
   }
-  console.log(employee, email, password)
   const isMatch = await bcrypt.compare(
     password,
     employee.password
@@ -119,7 +168,6 @@ export const validateAndIssueToken = async (email, password) => {
     {
       id: employee.id,
       jobTitle: employee.jobTitle,
-      email: employee.email,
     },
     process.env.JWT_SECRET,
     { expiresIn: "1d" } // or "15m", "7d"
