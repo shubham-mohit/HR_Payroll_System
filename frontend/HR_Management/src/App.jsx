@@ -97,7 +97,7 @@ export default function App() {
         throw new Error(data.error || 'Failed to sync dataset records');
       }
 
-      setEmployees(data.employees || []);
+      setEmployees(data.data || []);
       setPagination({
         total: data.total,
         page: data.page,
@@ -288,7 +288,7 @@ export default function App() {
             {/* Admin Profile & Logout Actions */}
             <div className="flex items-center gap-3">
               <div className="hidden sm:block text-right">
-                <p className="text-xs font-bold text-slate-950 truncate max-w-[150px]">{adminEmail}</p>
+                {/* <p className="text-xs font-bold text-slate-950 truncate max-w-[150px]">{adminEmail}</p> */}
                 <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">HR Administrator</span>
               </div>
 

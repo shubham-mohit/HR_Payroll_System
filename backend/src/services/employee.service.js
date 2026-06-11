@@ -5,68 +5,161 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
 export const createEmployeeService = async (data) => {
-  const existingEmployee =
-    await prisma.employee.findFirst({
+  const [existingEmployee, lastEmployee] = await Promise.all([
+    prisma.employee.findUnique({
       where: {
-        OR: [
-          { email: data.email },
-          { employeeCode: data.employeeCode },
-        ],
+        email: data.email,
       },
-    });
+    }),
+
+    prisma.employee.findFirst({
+      orderBy: {
+        createdAt: "desc",
+      },
+      select: {
+        employeeCode: true,
+      },
+    }),
+  ]);
 
   if (existingEmployee) {
-    throw new Error(
-      "Employee with email or employee code already exists"
-    );
+    throw new Error("Employee with email already exists");
   }
 
+  const nextNumber = lastEmployee?.employeeCode
+    ? Number(lastEmployee.employeeCode.replace("EMP", "")) + 1
+    : 1;
+
+  const employeeCode = `EMP${String(nextNumber).padStart(5, "0")}`;
+
   return prisma.employee.create({
-    data,
+    data: {
+      ...data,
+      employeeCode,
+    },
   });
 };
+
+const ALLOWED_SORT_FIELDS = [
+  "id",
+  "fullName",
+  "salary",
+  "age",
+  "country",
+  "jobTitle",
+  "employeeCode",
+];
+
 
 export const getEmployeesService = async ({
   page = 1,
   limit = 10,
   search = "",
+  country = "",
+  department = "",
+  sortBy = "id",
+  sortOrder = "desc",
 }) => {
-  const skip = (page - 1) * limit;
+  const safePage = Math.max(Number(page) || 1, 1);
+  const safeLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
+  const skip = (safePage - 1) * safeLimit;
 
-  const where = search
-    ? {
+  // Validate sort field
+  const safeSortBy = ALLOWED_SORT_FIELDS.includes(sortBy)
+    ? sortBy
+    : "id";
+
+  // Validate sort order
+  const safeSortOrder = sortOrder === "asc" ? "asc" : "desc";
+
+  // Clean inputs
+  const cleanSearch = search.trim();
+  const cleanCountry = country.trim();
+  const cleanDepartment = department.trim();
+
+  /**
+   * Build Prisma WHERE dynamically
+   */
+  const where = {
+    isDeleted: false,
+    ...(cleanCountry && {
+      country: cleanCountry,
+    }),
+    ...(cleanDepartment && {
+      department: cleanDepartment,
+    }),
+    ...(cleanSearch && {
       OR: [
         {
           fullName: {
-            contains: search,
+            contains: cleanSearch,
+            mode: "insensitive",
+          },
+        },
+        {
+          email: {
+            contains: cleanSearch,
+            mode: "insensitive",
+          },
+        },
+        {
+          jobTitle: {
+            contains: cleanSearch,
+            mode: "insensitive",
           },
         },
         {
           employeeCode: {
-            contains: search,
+            contains: cleanSearch,
+            mode: "insensitive",
           },
         },
       ],
-    }
-    : {};
+    }),
+  };
 
+  /**
+   * Run queries in parallel (performance optimization)
+   */
   const [employees, total] = await Promise.all([
     prisma.employee.findMany({
       where,
       skip,
-      take: limit,
+      take: safeLimit,
       orderBy: {
-        createdAt: "desc",
+        [safeSortBy]: safeSortOrder,
+      },
+      select: {
+        id: true,
+        employeeCode: true,
+        fullName: true,
+        email: true,
+        jobTitle: true,
+        country: true,
+        department: true,
+        salary: true,
+        currency: true,
+        age: true,
+        isDeleted: true,
+        createdAt: true,
       },
     }),
-    prisma.employee.count({ where }),
+
+    prisma.employee.count({
+      where,
+    }),
   ]);
 
   return {
-    employees,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
+    data: employees,
+    pagination: {
+      total,
+      page: safePage,
+      limit: safeLimit,
+      totalPages: Math.ceil(total / safeLimit),
+      hasNextPage: safePage * safeLimit < total,
+      hasPrevPage: safePage > 1,
+    },
   };
 };
 
@@ -174,5 +267,5 @@ export const validateAndIssueToken = async (email, password) => {
   );
 
   // 5. Return token
-  return {accessToken, employee};
+  return { accessToken, employee };
 }

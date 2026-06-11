@@ -76,6 +76,7 @@ async function seed() {
         Math.random() * (5000000 - 300000) + 300000
       ),
       currency: "INR",
+      startDate: "01-01-2022"
     });
   }
 

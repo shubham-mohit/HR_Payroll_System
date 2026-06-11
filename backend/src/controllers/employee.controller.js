@@ -1,22 +1,13 @@
-import {  BadrequestError } from "../utils/error.js"
+import { BadrequestError } from "../utils/error.js"
 import { createEmployeeService, getEmployeesService, fetchEmployeeService, updateEmployeeDetailsService, validateAndIssueToken, deleteEmployeeService } from "../services/employee.service.js";
-import { employeeSchema } from "../validators/employee.validator.js"
 import { invalidate } from "../utils/cache.js";
 
 const updatedFields = new Set(['fullName', 'email', 'department', 'jobTitle', 'age', 'salary']);
 
 export const createEmployeeController = async (req, res, next) => {
     try {
-        const result = employeeSchema.safeParse(req.body);
 
-        if (!result.success) {
-            return res.status(400).json({
-                success: false,
-                errors: result.error.issues,
-            });
-        }
-
-        const employee = await createEmployeeService(result.data);
+        const employee = await createEmployeeService(req.body);
         await invalidate(employee.country)
 
         return res.status(201).json({
@@ -30,13 +21,19 @@ export const createEmployeeController = async (req, res, next) => {
 
 export const getEmployeesController = async (req, res, next) => {
     try {
+        const { page, limit, search, country, department, sortBy, sortOrder } = req.query;
+
         const data = await getEmployeesService({
-            page: Number(req.query.page) || 1,
-            limit: Number(req.query.limit) || 10,
-            search: req.query.search || "",
+            page: Number(page) || 1,
+            limit: Number(limit) || 10,
+            search: search || "",
+            country: country || "",
+            department: department || "",
+            sortBy: sortBy || "id",
+            sortOrder: sortOrder || "desc",
         });
 
-        res.json({
+        res.status(200).json({
             success: true,
             ...data,
         });

@@ -22,6 +22,8 @@ const DEPARTMENTS = [
   'Engineering', 'Product', 'HR', 'Finance', 'Marketing', 'Customer Success'
 ];
 
+const CURRENCY = ['INR', 'USD', 'DHIRAM']
+
 const JOB_TITLES_BY_DEPT = {
   'Engineering': ['Software Engineer', 'Senior Software Engineer', 'Principal Engineer', 'Tech Lead', 'QA Engineer', 'Devops Engineer', 'Data Scientist'],
   'Product': ['Product Manager', 'Senior Product Manager', 'UI/UX Designer'],
@@ -171,6 +173,7 @@ export function EmployeeFormModal({ isOpen, onClose, employee, onSave }) {
   const [age, setAge] = useState('');
   const [startDate, setStartDate] = useState('');
   const [status, setStatus] = useState('Active');
+  const [currency, setCurrency] = useState('INR')
 
   const [saving, setSaving] = useState(false);
   const [validationError, setValidationError] = useState('');
@@ -189,18 +192,20 @@ export function EmployeeFormModal({ isOpen, onClose, employee, onSave }) {
       setAge(employee.age.toString());
       setStartDate(employee.startDate);
       setStatus(employee.status);
+      setCurrency(employee.currency);
     } else {
       setFullName('');
       setEmail('');
       setJobTitle('');
       setDepartment('');
-      setCountry('United States');
+      setCountry('IND');
       setSalary('');
       setAge('');
       // Set to current date as standard default
       const today = new Date().toISOString().split('T')[0];
       setStartDate(today);
       setStatus('Active');
+      setCurrency("INR")
     }
     setValidationError('');
   }, [employee, isOpen]);
@@ -236,7 +241,8 @@ export function EmployeeFormModal({ isOpen, onClose, employee, onSave }) {
       salary: Number(salary),
       age: Number(age),
       startDate,
-      status
+      // status,
+      currency
     });
     setSaving(false);
 
@@ -480,17 +486,21 @@ export function EmployeeFormModal({ isOpen, onClose, employee, onSave }) {
                 <div className="space-y-1">
                   <label className="metric-label font-bold text-slate-500 flex items-center gap-1">
                     <Tag className="w-3 h-3 text-slate-400" />
-                    Recruit Status
+                    Currency
                   </label>
                   <select
                     id="form-status"
                     required
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-white border border-slate-250 rounded-none focus:outline-none focus:ring-1 focus:ring-slate-900 focus:border-slate-900 text-slate-750 font-sans cursor-pointer"
                   >
-                    <option value="Active">Active</option>
-                    <option value="On Leave">On Leave</option>
+                    <option value="Active">INR</option>
+                    {/* <option value="On Leave">On Leave</option> */}
+                    {CURRENCY.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+
                   </select>
                 </div>
               </div>

@@ -23,6 +23,7 @@ model Employee {
 
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  startDate     String
 
 @@index([department, isDeleted])
 @@index([country, isDeleted])
