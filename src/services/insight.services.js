@@ -173,26 +173,38 @@ export const getAgeDistributionService = async () => {
 
 export const getNewHiresThisMonthService = async () => {
     const startOfMonth = new Date();
-
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);
 
-    const count =
-        await prisma.employee.count({
-            where: {
-                isDeleted: false,
-                createdAt: {
-                    gte: startOfMonth,
-                },
+    const where = {
+        isDeleted: false,
+        createdAt: { gte: startOfMonth },
+    };
+
+    const [count, hires] = await Promise.all([
+        prisma.employee.count({ where }),
+        prisma.employee.findMany({
+            where,
+            select: {
+                fullName: true,
+                salary: true,
+                country: true,
+                jobTitle: true,
+                createdAt: true,
             },
-        });
+            orderBy: { createdAt: 'desc' },
+        }),
+    ]);
 
     return {
-        month:
-            new Date().toLocaleString("en-US", {
-                month: "long",
-                year: "numeric",
-            }),
+        month: new Date().toLocaleString("en-US", { month: "long", year: "numeric" }),
         employee_count: count,
+        hires: hires.map(h => ({
+            fullName: h.fullName,
+            salary: h.salary,
+            country: h.country,
+            jobTitle: h.jobTitle,
+            startDate: h.createdAt.toISOString().split('T')[0],
+        })),
     };
 };

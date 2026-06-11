@@ -37,7 +37,7 @@ export async function getCountryInsights(req, res, next) {
 
 export const getJobTitleInsights = async (req, res, next) => {
     try {
-        const { jobTitle } = req.params;
+        const { jobTitle } = req.query;
 
         if (!jobTitle?.trim()) {
             throw new BadrequestError("Job title is required.");
@@ -77,7 +77,7 @@ export const getNewHiresThisMonth = async (req, res, next) => {
     try {
         const data = await getNewHiresThisMonthService();
         if (!data) {
-            throw new NotFoundError('No employee found.')
+            return res.status(200).json({success: true, data: 0})
         }
         return res.status(200).json({
             success: true,

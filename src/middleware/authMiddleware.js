@@ -5,7 +5,6 @@ import { AccessRole } from "../enum/index.js"
 
 export const authenticate = async (req, res, next) => {
     try {
-        console.log(req.cookies?.accessToken,"req")
         const token = req.cookies?.accessToken;
 
 

@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get('/country/:country', authenticate, getCountryInsights)
 
-router.get('/api/insights/jobtitle', authenticate, getJobTitleInsights)
+router.get('/jobtitle', authenticate, getJobTitleInsights)
 
 router.get('/age-distribution', authenticate, getAgeDistribution);
 

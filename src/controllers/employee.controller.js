@@ -115,15 +115,15 @@ export const loginUserController = async (req, res, next) => {
             throw new BadrequestError('Password is required Field.')
         }
         const validateUser = await validateAndIssueToken(email, password)
-        res.cookie("accessToken", validateUser, {
+        res.cookie("accessToken", validateUser.accessToken, {
             httpOnly: true,
             secure: false,
             sameSite: "lax",
             maxAge: 24 * 60 * 60 * 1000, // 1 day
         });
-
         return res.json({
             success: true,
+            email: validateUser.email,
             message: "Login successful",
         });
     } catch (err) {

@@ -174,5 +174,5 @@ export const validateAndIssueToken = async (email, password) => {
   );
 
   // 5. Return token
-  return accessToken;
+  return {accessToken, employee};
 }
