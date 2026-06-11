@@ -17,13 +17,13 @@ const app = express();
 app.use(corsMiddleware);
 app.use(express.json());
 app.use(cookieParser());
-// app.use(
-//   helmet({
-//     contentSecurityPolicy: false,
-//     xDownloadOptions: false,
-//   }),
-// );
-// app.use(rateLimiter);
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    xDownloadOptions: false,
+  }),
+);
+app.use(rateLimiter);
 
 // ROUTES
 app.use("/api/employees", employeeRoutes);
